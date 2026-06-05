@@ -36,14 +36,14 @@ values per card:
 
 ### Grading (original SM-2: quality `q` from 0–5)
 
-| q | Meaning |
-|---|---------|
-| 5 | Perfect recall |
-| 4 | Correct, after hesitation |
-| 3 | Correct, but with significant difficulty |
-| 2 | Incorrect; correct answer seemed easy to recall |
-| 1 | Incorrect; correct answer remembered once shown |
-| 0 | Complete blackout |
+| q   | Meaning                                         |
+| --- | ----------------------------------------------- |
+| 5   | Perfect recall                                  |
+| 4   | Correct, after hesitation                       |
+| 3   | Correct, but with significant difficulty        |
+| 2   | Incorrect; correct answer seemed easy to recall |
+| 1   | Incorrect; correct answer remembered once shown |
+| 0   | Complete blackout                               |
 
 `q >= 3` counts as a pass; `q < 3` is a fail.
 
@@ -98,12 +98,12 @@ Anki does **not** use textbook SM-2. Its scheduler differs in several ways
 Ease is stored as an integer percentage (e.g. `2500` = 2.5×), starting at
 **250%**. On a review:
 
-| Button | Ease change | Interval (next) |
-|--------|-------------|-----------------|
-| `Again` | −20% (floor 130%) | lapse: `interval × newIntervalMult` (default → relearn) |
-| `Hard`  | −15% | `interval × 1.2` (hardFactor) |
-| `Good`  | unchanged | `(interval + daysLate/2) × ease × intervalModifier` |
-| `Easy`  | +15% | `(interval + daysLate) × ease × easyBonus(1.3) × intervalModifier` |
+| Button  | Ease change       | Interval (next)                                                    |
+| ------- | ----------------- | ------------------------------------------------------------------ |
+| `Again` | −20% (floor 130%) | lapse: `interval × newIntervalMult` (default → relearn)            |
+| `Hard`  | −15%              | `interval × 1.2` (hardFactor)                                      |
+| `Good`  | unchanged         | `(interval + daysLate/2) × ease × intervalModifier`                |
+| `Easy`  | +15%              | `(interval + daysLate) × ease × easyBonus(1.3) × intervalModifier` |
 
 - **Interval modifier:** a global multiplier (default `1.0`) that scales every
   review interval — the blunt knob people use to trade retention for volume.
@@ -136,7 +136,7 @@ treating each review as pass/fail).
 
 ### The three state variables
 
-- **Retrievability `R`** — probability you recall the card *right now*
+- **Retrievability `R`** — probability you recall the card _right now_
   (0–1). Decays over time.
 - **Stability `S`** — memory strength, defined as the **number of days for `R`
   to fall from 100% to 90%**. Higher = forgotten more slowly.
@@ -158,7 +158,7 @@ In FSRS-4.5/5 the curve is fixed with `DECAY = -0.5` and
 R(t, S) = (1 + t / (9S)) ^ -1
 ```
 
-In **FSRS-6** the decay became a *trainable* parameter `w20` (range 0.1–0.8),
+In **FSRS-6** the decay became a _trainable_ parameter `w20` (range 0.1–0.8),
 personalizing curve shape per user. By construction `R = 0.9` exactly when
 `t = S`.
 
@@ -182,16 +182,16 @@ volume against how much you forget.
 FSRS-5 has **19** weights `w0…w18`; FSRS-6 adds short-term and decay terms for
 **21** (`w0…w20`). Roughly:
 
-| Weights | Role |
-|---------|------|
-| `w0–w3` | Initial stability after first review, per grade (Again/Hard/Good/Easy) |
-| `w4–w5` | Initial difficulty |
-| `w6–w7` | Difficulty update + mean-reversion strength |
-| `w8–w10` | Stability increase on successful recall |
-| `w11–w14` | Stability after a lapse (forgetting) |
-| `w15–w16` | Hard / Easy grade multipliers |
-| `w17–w19` | Same-day / short-term review adjustment |
-| `w20` | Forgetting-curve decay (FSRS-6) |
+| Weights   | Role                                                                   |
+| --------- | ---------------------------------------------------------------------- |
+| `w0–w3`   | Initial stability after first review, per grade (Again/Hard/Good/Easy) |
+| `w4–w5`   | Initial difficulty                                                     |
+| `w6–w7`   | Difficulty update + mean-reversion strength                            |
+| `w8–w10`  | Stability increase on successful recall                                |
+| `w11–w14` | Stability after a lapse (forgetting)                                   |
+| `w15–w16` | Hard / Easy grade multipliers                                          |
+| `w17–w19` | Same-day / short-term review adjustment                                |
+| `w20`     | Forgetting-curve decay (FSRS-6)                                        |
 
 FSRS-5 default weights (a usable starting point if you have no data):
 
@@ -204,6 +204,7 @@ FSRS-5 default weights (a usable starting point if you have no data):
 ### Core update equations (FSRS-5 form)
 
 **Initial state** (first review, grade `G ∈ {1,2,3,4}`):
+
 ```
 S0(G) = w[G-1]
 D0(G) = w4 - exp(w5 * (G-1)) + 1        # clamped to [1, 10]
@@ -211,6 +212,7 @@ D0(G) = w4 - exp(w5 * (G-1)) + 1        # clamped to [1, 10]
 
 **Difficulty update** (linear damping + mean reversion toward the "easy"
 target so difficulty doesn't drift forever):
+
 ```
 ΔD  = -w6 * (G - 3)
 D'  = D + ΔD * (10 - D) / 9              # damping near the ceiling
@@ -220,17 +222,20 @@ D'' = w7 * D0(4) + (1 - w7) * D'         # mean reversion
 **Stability after a successful recall** (grows more when `R` is low — i.e.
 reviewing right when you're about to forget is most efficient — less when `D`
 or `S` is already high):
+
 ```
 S_recall = S * (1 + exp(w8) * (11 - D) * S^(-w9) * (exp(w10*(1-R)) - 1)
                   * hardPenalty(w15 if G==2) * easyBonus(w16 if G==4))
 ```
 
 **Stability after forgetting** (`Again`) — always less than before:
+
 ```
 S_lapse = w11 * D^(-w12) * ((S + 1)^w13 - 1) * exp(w14 * (1 - R))
 ```
 
 **Same-day / short-term reviews** (FSRS-6):
+
 ```
 S' = S + w17 + w18*(G-3) - w19*ln(S)     # with S' >= S when G >= 3
 ```
@@ -284,7 +289,7 @@ Sources: [FSRS-5 vs SM-2 (Diane)](https://www.diane.app/en/guides/fsrs-vs-sm2),
    - Consider modeling shared sub-components (radicals, shared characters in
      compounds) but keep scheduling per-card; cross-card "memory" is beyond
      stock FSRS and a research rabbit hole.
-   - Tone and handwriting recall are typically *harder* (lower initial S) than
+   - Tone and handwriting recall are typically _harder_ (lower initial S) than
      recognition — the per-card difficulty parameter captures this naturally.
 6. **Keep a simple fallback.** If implementing FSRS in full is too much for an
    MVP, a clean SM-2 with a difficulty/scheduling split (to dodge ease hell)
@@ -308,5 +313,5 @@ Sources: [FSRS-5 vs SM-2 (Diane)](https://www.diane.app/en/guides/fsrs-vs-sm2),
 - [Comparison with SM-2 — fsrs-optimizer (DeepWiki)](https://deepwiki.com/open-spaced-repetition/fsrs-optimizer/7.3-comparison-with-sm-2)
 - [FSRS vs SM-2 guide — MemoForge](https://memoforge.app/blog/fsrs-vs-sm2-anki-algorithm-guide-2025/)
 - [FSRS6 is more accurate in retention — Anki Forums](https://forums.ankiweb.net/t/fsrs6-is-more-accurate-in-retention/66275)
-</content>
-</invoke>
+  </content>
+  </invoke>
