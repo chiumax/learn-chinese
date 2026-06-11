@@ -1,17 +1,20 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useCallback, useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Flashcard } from "@/components/study/flashcard";
 import { GradeBar } from "@/components/study/grade-bar";
-import { db } from "@/lib/db/dexie";
 import { ensureDemoDeck } from "@/lib/db/seed";
-import { useDueCards, useGradeCard } from "@/hooks/use-study";
-import type { ReviewGrade } from "@/lib/srs/scheduler";
-import { currentCardId, useStudySession } from "@/stores/study-session";
+import { useCard, useDueCards, useGradeCard, useNote } from "@/hooks/use-study";
+import { isLearningSchedule, type ReviewGrade } from "@/lib/srs/scheduler";
+import {
+  currentCardId,
+  remainingCount,
+  useStudySession,
+} from "@/stores/study-session";
 
 export function StudyView() {
   // Seed + resolve the demo deck (offline, local-first).
@@ -26,6 +29,9 @@ export function StudyView() {
   const session = useStudySession();
   const cardId = currentCardId(session);
 
+  const { data: card } = useCard(cardId);
+  const { data: note } = useNote(card?.noteId);
+
   // Populate the session queue once cards are loaded.
   useEffect(() => {
     if (dueCards && session.queue.length === 0 && dueCards.length > 0) {
@@ -34,23 +40,43 @@ export function StudyView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dueCards]);
 
-  const { data: card } = useQuery({
-    queryKey: ["card", cardId],
-    queryFn: () => (cardId ? db.cards.get(cardId) : undefined),
-    enabled: !!cardId,
-  });
-  const { data: note } = useQuery({
-    queryKey: ["note", card?.noteId],
-    queryFn: () => (card ? db.notes.get(card.noteId) : undefined),
-    enabled: !!card,
-  });
+  const remaining = remainingCount(session);
+  const done = !dueCards || (session.queue.length > 0 && remaining === 0);
+
+  const handleGrade = useCallback(
+    async (g: ReviewGrade) => {
+      if (!card || grade.isPending) return;
+      const durationMs = session.cardShownAt
+        ? Date.now() - session.cardShownAt
+        : 0;
+      const updated = await grade.mutateAsync({ card, grade: g, durationMs });
+      // Cards still in their learning steps come due again this session.
+      session.advance(
+        isLearningSchedule(updated.schedule) ? updated.id : undefined,
+      );
+    },
+    [card, grade, session],
+  );
+
+  // Keyboard shortcuts: Space/Enter reveals, 1–4 grades.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (!card) return;
+      if (!session.answerShown && (e.key === " " || e.key === "Enter")) {
+        e.preventDefault();
+        session.reveal();
+      } else if (session.answerShown && ["1", "2", "3", "4"].includes(e.key)) {
+        e.preventDefault();
+        void handleGrade(Number(e.key) as ReviewGrade);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [card, session, handleGrade]);
 
   if (isLoading || !deckId) {
     return <p className="text-muted-foreground text-center">Loading…</p>;
   }
-
-  const total = session.queue.length;
-  const done = total === 0 || session.index >= total;
 
   if (done) {
     return (
@@ -77,30 +103,24 @@ export function StudyView() {
     return <p className="text-muted-foreground text-center">Loading card…</p>;
   }
 
-  async function handleGrade(g: ReviewGrade) {
-    if (!card) return;
-    const durationMs = session.cardShownAt
-      ? Date.now() - session.cardShownAt
-      : 0;
-    await grade.mutateAsync({ card, grade: g, durationMs });
-    session.advance();
-  }
+  const total = session.reviewedCount + remaining;
 
   return (
     <div className="space-y-6">
-      <Progress value={(session.index / total) * 100} />
+      <Progress value={total ? (session.reviewedCount / total) * 100 : 0} />
       <Flashcard card={card} note={note} answerShown={session.answerShown} />
 
       {session.answerShown ? (
         <GradeBar onGrade={handleGrade} disabled={grade.isPending} />
       ) : (
         <Button className="h-12 w-full" onClick={() => session.reveal()}>
-          Show answer
+          Show answer{" "}
+          <kbd className="bg-muted ml-2 rounded px-1.5 text-xs">space</kbd>
         </Button>
       )}
 
       <p className="text-muted-foreground text-center text-sm">
-        {total - session.index} left
+        {remaining} left
         <button
           className="ml-3 underline"
           onClick={() => toast.info("Sync runs automatically when online.")}

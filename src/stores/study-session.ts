@@ -6,7 +6,7 @@ import { create } from "zustand";
  * lives in Dexie and is accessed via React Query. See ARCHITECTURE.md §6.
  */
 interface StudySessionState {
-  queue: string[]; // card ids remaining this session
+  queue: string[]; // card ids remaining this session (may grow via re-queue)
   index: number;
   answerShown: boolean;
   startedAt: number | null;
@@ -15,8 +15,12 @@ interface StudySessionState {
 
   start: (cardIds: string[]) => void;
   reveal: () => void;
-  /** Advance past the current card; returns the next card id or null. */
-  advance: () => string | null;
+  /**
+   * Advance past the current card. Pass `requeueId` to append a card back onto
+   * the queue — used for cards still in their learning steps, which become due
+   * again within the same session (mirrors Anki). Returns the next card id.
+   */
+  advance: (requeueId?: string) => string | null;
   reset: () => void;
 }
 
@@ -40,16 +44,18 @@ export const useStudySession = create<StudySessionState>((set, get) => ({
 
   reveal: () => set({ answerShown: true }),
 
-  advance: () => {
-    const { index, queue } = get();
+  advance: (requeueId) => {
+    const { index, queue, reviewedCount } = get();
+    const nextQueue = requeueId ? [...queue, requeueId] : queue;
     const nextIndex = index + 1;
     set({
+      queue: nextQueue,
       index: nextIndex,
       answerShown: false,
       cardShownAt: Date.now(),
-      reviewedCount: get().reviewedCount + 1,
+      reviewedCount: reviewedCount + 1,
     });
-    return queue[nextIndex] ?? null;
+    return nextQueue[nextIndex] ?? null;
   },
 
   reset: () =>
@@ -65,3 +71,7 @@ export const useStudySession = create<StudySessionState>((set, get) => ({
 
 export const currentCardId = (s: StudySessionState): string | null =>
   s.queue[s.index] ?? null;
+
+/** Cards left in the session (including any re-queued learning cards). */
+export const remainingCount = (s: StudySessionState): number =>
+  Math.max(0, s.queue.length - s.index);

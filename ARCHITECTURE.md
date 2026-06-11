@@ -30,31 +30,35 @@
 
 ## 2. Tech stack
 
-| Concern              | Choice                                                 | Notes                                                                           |
-| -------------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
-| Framework            | **Next.js (App Router)**                               | RSC for static/marketing pages; client components for the interactive study app |
-| Language             | **TypeScript** (`strict`)                              |                                                                                 |
-| Styling              | **Tailwind CSS** + `clsx` + `tailwind-merge`           | `cva` for component variants                                                    |
-| Components           | **shadcn/ui** (Radix primitives)                       | We own the component source                                                     |
-| Icons                | **lucide-react**                                       | shadcn default                                                                  |
-| Server state         | **TanStack Query** (React Query)                       | Caching, mutations, optimistic updates, sync orchestration                      |
-| Client/UI state      | **Zustand**                                            | Review-session state, card flip, ephemeral UI only                              |
-| URL state            | **nuqs**                                               | Deck/filter params, shareable & back-button friendly                            |
-| Local DB             | **Dexie** (IndexedDB)                                  | Local-first source of truth on the client                                       |
-| Service worker / PWA | **Serwist**                                            | App-shell caching, offline routing (maintained successor to next-pwa)           |
-| Scheduling           | **`ts-fsrs`**                                          | FSRS-6 implementation; runs client-side                                         |
-| Server ORM           | **Drizzle ORM**                                        | SQL-first, great inference                                                      |
-| Server DB            | **Postgres** (Neon / Supabase)                         | Serverless-friendly                                                             |
-| API layer            | **Next Server Actions** + Route Handlers               | Sync endpoints as Route Handlers; mutations as actions                          |
-| Validation           | **Zod**                                                | Shared schemas between client & server                                          |
-| Env validation       | **`@t3-oss/env-nextjs`**                               | Zod-validated env at build time                                                 |
-| Forms                | **react-hook-form** + `@hookform/resolvers` (Zod)      | Card/deck authoring                                                             |
-| Auth                 | **Auth.js (NextAuth v5)**                              | Email + OAuth; sessions gate sync, not study                                    |
-| Animation            | **`motion`** (framer-motion)                           | Card flip, swipe-to-grade                                                       |
-| Toasts               | **sonner**                                             | shadcn-friendly                                                                 |
-| Charts               | **recharts**                                           | Review heatmap, retention forecast, stats                                       |
-| Testing              | **Vitest** + **React Testing Library**, **Playwright** | Unit/component + e2e review flow                                                |
-| Quality              | **ESLint**, **Prettier**, **Husky** + **lint-staged**  | Pre-commit gates                                                                |
+Status legend: ✅ in use · 🔜 planned (dependency added only when its first
+feature lands, to avoid dead dependencies).
+
+| Concern              | Choice                                           | Status | Notes                                                     |
+| -------------------- | ------------------------------------------------ | ------ | --------------------------------------------------------- |
+| Framework            | **Next.js (App Router)**                         | ✅     | RSC for static pages; client components for the study app |
+| Language             | **TypeScript** (`strict`)                        | ✅     |                                                           |
+| Styling              | **Tailwind CSS** + `clsx` + `tailwind-merge`     | ✅     | `cva` for component variants                              |
+| Components           | **shadcn/ui**                                    | ✅     | We own the component source                               |
+| Icons                | **lucide-react**                                 | ✅     | shadcn default                                            |
+| Server state         | **TanStack Query** (React Query)                 | ✅     | Async gateway to local data; will orchestrate sync        |
+| Client/UI state      | **Zustand**                                      | ✅     | Review-session state, ephemeral UI only                   |
+| URL state            | **nuqs**                                         | ✅     | Adapter wired; deck/filter params to come                 |
+| Local DB             | **Dexie** (IndexedDB)                            | ✅     | Local-first source of truth on the client                 |
+| Service worker / PWA | **Serwist**                                      | ✅     | App-shell caching (maintained successor to next-pwa)      |
+| Scheduling           | **`ts-fsrs`**                                    | ✅     | FSRS; pure wrapper in `lib/srs`, runs client-side         |
+| Validation           | **Zod**                                          | ✅     | Env today; shared client/server schemas as the API grows  |
+| Env validation       | **`@t3-oss/env-nextjs`**                         | ✅     | Imported in `next.config.ts`, validated at build          |
+| Animation            | **`motion`** (framer-motion)                     | ✅     | Card flip; swipe-to-grade to come                         |
+| Toasts               | **sonner**                                       | ✅     | shadcn-friendly                                           |
+| Unit/component tests | **Vitest** + **React Testing Library**           | ✅     | `lib/srs` + component tests                               |
+| Quality              | **ESLint**, **Prettier**, **Husky**, lint-staged | ✅     | Pre-commit gate + CI                                      |
+| Server ORM           | **Drizzle ORM**                                  | 🔜     | For the sync backend                                      |
+| Server DB            | **Postgres** (Neon / Supabase)                   | 🔜     | Serverless-friendly                                       |
+| API layer            | **Server Actions** + Route Handlers              | 🔜     | `/api/sync`; mutations as actions                         |
+| Auth                 | **Auth.js (NextAuth v5)**                        | 🔜     | Gates sync, not study                                     |
+| Forms                | **react-hook-form** + Zod resolver               | 🔜     | Deck/note authoring UI                                    |
+| Charts               | **recharts**                                     | 🔜     | Review heatmap, retention forecast                        |
+| E2E tests            | **Playwright**                                   | 🔜     | Offline review-flow scenario                              |
 
 ---
 

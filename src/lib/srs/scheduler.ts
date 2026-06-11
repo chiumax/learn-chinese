@@ -147,6 +147,14 @@ export function replay(
   }, start);
 }
 
+/**
+ * Whether a card is still in its (re)learning steps and will fall due again
+ * within the current session, so the UI should re-queue it rather than wait.
+ */
+export function isLearningSchedule(s: CardSchedule): boolean {
+  return s.state === State.Learning || s.state === State.Relearning;
+}
+
 /** Human-readable retrievability (recall probability) of a card right now. */
 export function retrievability(
   current: CardSchedule,

@@ -1,6 +1,10 @@
 import withSerwistInit from "@serwist/next";
 import type { NextConfig } from "next";
 
+// Validate environment variables at config load (build + dev start) so a
+// missing/malformed var fails fast rather than at runtime. See ARCHITECTURE.md §10.
+import "./src/lib/env";
+
 const nextConfig: NextConfig = {
   // Serwist injects a webpack config; the production build runs with `--webpack`.
   // In dev (Serwist disabled) we keep fast Turbopack — this empty config tells

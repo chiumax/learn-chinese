@@ -23,6 +23,14 @@ export function useCard(cardId: string | null) {
   });
 }
 
+export function useNote(noteId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["note", noteId],
+    queryFn: () => (noteId ? db.notes.get(noteId) : undefined),
+    enabled: !!noteId,
+  });
+}
+
 export function useGradeCard(deckId: string) {
   const qc = useQueryClient();
   return useMutation({
