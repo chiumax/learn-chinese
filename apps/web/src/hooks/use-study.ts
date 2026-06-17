@@ -3,8 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { db } from "@/lib/db/dexie";
 import { gradeCard, getDueCards } from "@/lib/db/repository";
-import type { ReviewGrade } from "@learn-chinese/shared";
-import type { Card } from "@learn-chinese/shared";
+import { syncOnce } from "@/lib/sync/engine";
+import type { Card, ReviewGrade } from "@learn-chinese/shared";
 
 /** React Query is our async gateway to the local (Dexie) source of truth. */
 
@@ -45,6 +45,20 @@ export function useGradeCard(deckId: string) {
     }) => gradeCard(card, grade, durationMs),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["dueCards", deckId] });
+    },
+  });
+}
+
+/**
+ * One push/pull sync cycle against the server. Failures (e.g. offline) are
+ * swallowed by callers — sync is best-effort and retried later.
+ */
+export function useSync() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: syncOnce,
+    onSuccess: (result) => {
+      if (result.pulled > 0) qc.invalidateQueries();
     },
   });
 }

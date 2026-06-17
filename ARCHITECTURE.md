@@ -50,12 +50,13 @@ feature lands, to avoid dead dependencies).
 | Env validation       | **`@t3-oss/env-nextjs`**                         | ✅     | Imported in `next.config.ts`, validated at build          |
 | Animation            | **`motion`** (framer-motion)                     | ✅     | Card flip; swipe-to-grade to come                         |
 | Toasts               | **sonner**                                       | ✅     | shadcn-friendly                                           |
-| Unit/component tests | **Vitest** + **React Testing Library**           | ✅     | `lib/srs` + component tests                               |
+| Unit/component tests | **Vitest** + **React Testing Library**           | ✅     | shared/server/web tests                                   |
 | Quality              | **ESLint**, **Prettier**, **Husky**, lint-staged | ✅     | Pre-commit gate + CI                                      |
-| Server ORM           | **Drizzle ORM**                                  | 🔜     | For the sync backend                                      |
-| Server DB            | **Postgres** (Neon / Supabase)                   | 🔜     | Serverless-friendly                                       |
-| API layer            | **Server Actions** + Route Handlers              | 🔜     | `/api/sync`; mutations as actions                         |
-| Auth                 | **Auth.js (NextAuth v5)**                        | 🔜     | Gates sync, not study                                     |
+| Server runtime       | **Hono** + `@hono/node-server`                   | ✅     | Standalone long-lived process (not serverless)            |
+| Server ORM           | **Drizzle ORM**                                  | ✅     | Sync store in `apps/server`                               |
+| Server DB            | **SQLite** (better-sqlite3)                      | ✅     | Local file; swap dialect for Postgres/Turso later         |
+| Sync API             | **`POST /sync`** (Hono)                          | ✅     | Push/pull with cursor + idempotency                       |
+| Auth                 | **Auth.js (NextAuth v5)**                        | 🔜     | Server is single-user (LOCAL_USER) until then             |
 | Forms                | **react-hook-form** + Zod resolver               | 🔜     | Deck/note authoring UI                                    |
 | Charts               | **recharts**                                     | 🔜     | Review heatmap, retention forecast                        |
 | E2E tests            | **Playwright**                                   | 🔜     | Offline review-flow scenario                              |
@@ -93,10 +94,10 @@ feature lands, to avoid dead dependencies).
                                               │  (online only)
                                               ▼
                           ┌─────────────────────────────────┐
-                          │  Next.js server                 │
-                          │  Route Handlers: /api/sync       │
-                          │  Server Actions: auth, authoring │
-                          │  Drizzle ──► Postgres            │
+                          │  apps/server (standalone Hono)  │
+                          │  POST /sync                      │
+                          │  Drizzle ──► SQLite              │
+                          │  replays FSRS (from shared)      │
                           └─────────────────────────────────┘
 ```
 

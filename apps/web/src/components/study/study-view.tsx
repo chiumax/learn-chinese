@@ -2,13 +2,19 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect } from "react";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Flashcard } from "@/components/study/flashcard";
 import { GradeBar } from "@/components/study/grade-bar";
+import { SyncStatus } from "@/components/study/sync-status";
 import { ensureDemoDeck } from "@/lib/db/seed";
-import { useCard, useDueCards, useGradeCard, useNote } from "@/hooks/use-study";
+import {
+  useCard,
+  useDueCards,
+  useGradeCard,
+  useNote,
+  useSync,
+} from "@/hooks/use-study";
 import { isLearningSchedule, type ReviewGrade } from "@learn-chinese/shared";
 import {
   currentCardId,
@@ -25,12 +31,22 @@ export function StudyView() {
 
   const { data: dueCards, isLoading } = useDueCards(deckId ?? "");
   const grade = useGradeCard(deckId ?? "");
+  const sync = useSync();
 
   const session = useStudySession();
   const cardId = currentCardId(session);
 
   const { data: card } = useCard(cardId);
   const { data: note } = useNote(card?.noteId);
+
+  // Best-effort sync: on first load and whenever the network comes back.
+  const triggerSync = useCallback(() => sync.mutate(), [sync]);
+  useEffect(() => {
+    triggerSync();
+    window.addEventListener("online", triggerSync);
+    return () => window.removeEventListener("online", triggerSync);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Populate the session queue once cards are loaded.
   useEffect(() => {
@@ -54,8 +70,10 @@ export function StudyView() {
       session.advance(
         isLearningSchedule(updated.schedule) ? updated.id : undefined,
       );
+      // Push the new review to the server (no-op when offline).
+      sync.mutate();
     },
-    [card, grade, session],
+    [card, grade, session, sync],
   );
 
   // Keyboard shortcuts: Space/Enter reveals, 1–4 grades.
@@ -119,15 +137,12 @@ export function StudyView() {
         </Button>
       )}
 
-      <p className="text-muted-foreground text-center text-sm">
-        {remaining} left
-        <button
-          className="ml-3 underline"
-          onClick={() => toast.info("Sync runs automatically when online.")}
-        >
-          status
-        </button>
-      </p>
+      <SyncStatus
+        remaining={remaining}
+        onSync={triggerSync}
+        isSyncing={sync.isPending}
+        isError={sync.isError}
+      />
     </div>
   );
 }

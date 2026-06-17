@@ -3,62 +3,58 @@
 An offline-first, local-first spaced-repetition app for learning Chinese,
 scheduled with [FSRS](./docs/anki-algorithm-research.md).
 
-## Stack
+## Monorepo layout
 
-- **Next.js 16** (App Router) + **TypeScript** (strict)
-- **Tailwind CSS v4** + **shadcn/ui**
-- **TanStack Query** (server/async state) + **Zustand** (session/UI state) + **nuqs** (URL state)
-- **Dexie** (IndexedDB) as the local source of truth
-- **Serwist** for the offline PWA app shell
-- **ts-fsrs** for scheduling · **Drizzle** + Postgres for the sync backend
-- **Vitest** + Testing Library for tests
+pnpm workspace with three packages:
 
-See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the full design, and
-[`docs/anki-algorithm-research.md`](./docs/anki-algorithm-research.md) for the
-algorithm research behind the scheduler choice.
+```
+apps/
+  web/        # Next.js 16 client (offline-first; Dexie/IndexedDB is the local store)
+  server/     # standalone Hono sync server (not serverless) + better-sqlite3 + Drizzle
+packages/
+  shared/     # FSRS scheduler, domain types, Zod sync DTOs — used by web AND server
+```
+
+The **scheduler lives in `shared`** because it must run on both sides: the
+client schedules during study, and the server _replays_ it to resolve
+multi-device conflicts. See [`ARCHITECTURE.md`](./ARCHITECTURE.md) for the full
+design and [`docs/anki-algorithm-research.md`](./docs/anki-algorithm-research.md)
+for why FSRS.
 
 ## Getting started
 
 ```bash
 pnpm install
-pnpm dev          # http://localhost:3000
+pnpm dev            # runs web (:3000) and server (:4000) together
 ```
 
-The app seeds a small demo deck on first run, so you can study immediately with
-no backend. Reviews are written to IndexedDB and queued in an outbox for sync.
+- Web alone: `pnpm dev:web` · Server alone: `pnpm dev:server`
+- The app seeds a demo deck on first run and works fully offline; reviews land
+  in IndexedDB and queue in an outbox. When the server is reachable, the client
+  pushes the outbox and pulls changes (`POST /sync`).
 
-## Scripts
+## Scripts (root)
 
-| Command           | Description                                           |
-| ----------------- | ----------------------------------------------------- |
-| `pnpm dev`        | Start the dev server                                  |
-| `pnpm build`      | Production build (uses webpack — required by Serwist) |
-| `pnpm test`       | Run unit tests once                                   |
-| `pnpm test:watch` | Watch mode                                            |
-| `pnpm typecheck`  | `tsc --noEmit`                                        |
-| `pnpm lint`       | ESLint                                                |
-| `pnpm format`     | Prettier                                              |
+| Command          | Description                                        |
+| ---------------- | -------------------------------------------------- |
+| `pnpm dev`       | Run web + server in parallel                       |
+| `pnpm build`     | Build every package (web uses webpack for Serwist) |
+| `pnpm test`      | Run all package tests                              |
+| `pnpm typecheck` | Typecheck every package                            |
+| `pnpm lint`      | Lint the web app                                   |
+| `pnpm format`    | Prettier across the repo                           |
 
-## Project layout
+## Data & sync model
 
-```
-src/
-  app/                 # routes, layout, service worker (sw.ts), manifest
-  components/
-    ui/                # shadcn components
-    study/             # Flashcard, GradeBar, StudyView
-    providers.tsx      # React Query / nuqs / Toaster
-  hooks/               # React Query hooks
-  lib/
-    srs/               # ts-fsrs wrapper (pure, fully tested)
-    db/                # Dexie schema, repository, seed
-    types.ts           # domain model
-    env.ts             # Zod-validated env
-  stores/              # Zustand stores
-```
+- **Client truth:** Dexie/IndexedDB. Study never needs the network.
+- **Server:** SQLite (better-sqlite3 + Drizzle), a long-lived Node process.
+- **Reviews** are immutable, conflict-free events; **decks/notes/cards** are
+  last-write-wins; a card's schedule is **derived** by replaying its review log.
+- Sync is push/pull with a monotonic cursor and per-mutation idempotency.
 
 ## Status
 
-Vertical slice: study loop works offline against the local DB. Not yet built:
-the sync engine + server (`/api/sync`, Drizzle schema), auth, and parameter
-optimization. See the "open questions" in `ARCHITECTURE.md`.
+Working end-to-end: offline study loop + multi-device sync against the local
+SQLite server. Not yet built: real auth (server is single-user for now),
+parameter optimization, deck/note authoring UI, audio, handwriting. See
+`ARCHITECTURE.md` §11.
