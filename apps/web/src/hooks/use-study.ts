@@ -3,8 +3,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { db } from "@/lib/db/dexie";
 import { gradeCard, getDueCards } from "@/lib/db/repository";
-import type { ReviewGrade } from "@/lib/srs/scheduler";
-import type { Card } from "@/lib/types";
+import type { ReviewGrade } from "@learn-chinese/shared";
+import type { Card } from "@learn-chinese/shared";
 
 /** React Query is our async gateway to the local (Dexie) source of truth. */
 

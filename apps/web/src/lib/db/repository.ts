@@ -4,8 +4,14 @@ import {
   schedule as scheduleNext,
   type ReviewGrade,
   type SchedulerOptions,
-} from "@/lib/srs/scheduler";
-import type { Card, CardTemplate, Deck, Note, OutboxItem } from "@/lib/types";
+} from "@learn-chinese/shared";
+import type {
+  Card,
+  CardTemplate,
+  Deck,
+  Note,
+  OutboxItem,
+} from "@learn-chinese/shared";
 
 /**
  * All local writes funnel through here so that (a) the outbox is kept in sync

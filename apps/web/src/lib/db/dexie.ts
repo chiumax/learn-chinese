@@ -1,6 +1,12 @@
 import Dexie, { type EntityTable } from "dexie";
 import { ulid } from "ulid";
-import type { Card, Deck, Note, OutboxItem, ReviewLog } from "@/lib/types";
+import type {
+  Card,
+  Deck,
+  Note,
+  OutboxItem,
+  ReviewLog,
+} from "@learn-chinese/shared";
 
 /**
  * Local-first source of truth (IndexedDB). All reads/writes during normal use

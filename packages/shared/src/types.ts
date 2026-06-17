@@ -1,4 +1,4 @@
-import type { CardSchedule, ReviewGrade } from "@/lib/srs/scheduler";
+import type { CardSchedule, ReviewGrade } from "./srs/scheduler";
 
 /** Card template kinds — one Chinese note spawns several of these. See ARCHITECTURE.md §5.1. */
 export type CardTemplate = "recognition" | "production" | "tone" | "writing";

@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "motion/react";
 import { Card } from "@/components/ui/card";
-import type { Card as CardModel, Note } from "@/lib/types";
+import type { Card as CardModel, Note } from "@learn-chinese/shared";
 
 /**
  * Per-template prompt/answer mapping. Each template tests a different facet of

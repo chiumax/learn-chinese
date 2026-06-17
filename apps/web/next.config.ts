@@ -6,6 +6,8 @@ import type { NextConfig } from "next";
 import "./src/lib/env";
 
 const nextConfig: NextConfig = {
+  // Compile the workspace package's TypeScript source (it ships .ts, not built JS).
+  transpilePackages: ["@learn-chinese/shared"],
   // Serwist injects a webpack config; the production build runs with `--webpack`.
   // In dev (Serwist disabled) we keep fast Turbopack — this empty config tells
   // Next 16 the webpack key is intentional and silences the mismatch error.

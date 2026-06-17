@@ -9,7 +9,7 @@ import { Flashcard } from "@/components/study/flashcard";
 import { GradeBar } from "@/components/study/grade-bar";
 import { ensureDemoDeck } from "@/lib/db/seed";
 import { useCard, useDueCards, useGradeCard, useNote } from "@/hooks/use-study";
-import { isLearningSchedule, type ReviewGrade } from "@/lib/srs/scheduler";
+import { isLearningSchedule, type ReviewGrade } from "@learn-chinese/shared";
 import {
   currentCardId,
   remainingCount,

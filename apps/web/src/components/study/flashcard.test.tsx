@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { newCardSchedule } from "@/lib/srs/scheduler";
-import type { Card, Note } from "@/lib/types";
+import { newCardSchedule } from "@learn-chinese/shared";
+import type { Card, Note } from "@learn-chinese/shared";
 import { Flashcard } from "./flashcard";
 
 const note: Note = {

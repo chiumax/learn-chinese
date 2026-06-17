@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import type { ReviewGrade } from "@/lib/srs/scheduler";
+import type { ReviewGrade } from "@learn-chinese/shared";
 
 const GRADES: {
   grade: ReviewGrade;
