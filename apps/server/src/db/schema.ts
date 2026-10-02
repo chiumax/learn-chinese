@@ -10,8 +10,8 @@ import { integer, real, sqliteTable, text } from "drizzle-orm/sqlite-core";
  * Server-side mirror of the client entities (ARCHITECTURE.md §5.1), scoped by
  * `userId`. JSON-shaped fields are stored as text with a typed accessor.
  *
- * Auth is not built yet, so a single `LOCAL_USER` owns everything for now; the
- * schema is already multi-user so adding real auth is just populating userId.
+ * This deployment is intentionally single-user. The schema remains user-scoped
+ * so a future multi-user migration does not require reshaping every entity.
  */
 
 export const decks = sqliteTable("decks", {

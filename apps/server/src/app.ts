@@ -1,32 +1,38 @@
 import { zSyncRequest } from "@learn-chinese/shared";
+import { timingSafeEqual } from "node:crypto";
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 import type { Db } from "./db/client";
-import { LOCAL_USER, processSync } from "./sync/service";
+import { OWNER_USER_ID, processSync } from "./sync/service";
 
 export interface AppOptions {
-  /** Allowed CORS origin for the web client. */
-  webOrigin?: string;
+  /** Shared only with the authenticated Next.js proxy. */
+  syncSecret: string;
+}
+
+function hasValidBearer(header: string | undefined, secret: string): boolean {
+  if (!header?.startsWith("Bearer ")) return false;
+  const provided = Buffer.from(header.slice("Bearer ".length));
+  const expected = Buffer.from(secret);
+  return (
+    provided.length === expected.length && timingSafeEqual(provided, expected)
+  );
 }
 
 /**
  * Build the HTTP app around an injected database, so tests can pass an
  * in-memory DB and the entry point passes a file-backed one.
  */
-export function createApp(db: Db, opts: AppOptions = {}) {
+export function createApp(db: Db, opts: AppOptions) {
   const app = new Hono();
-
-  app.use(
-    "*",
-    cors({
-      origin: opts.webOrigin ?? "http://localhost:3000",
-      allowMethods: ["GET", "POST", "OPTIONS"],
-    }),
-  );
 
   app.get("/health", (c) => c.json({ ok: true }));
 
   app.post("/sync", async (c) => {
+    if (!hasValidBearer(c.req.header("authorization"), opts.syncSecret)) {
+      c.header("WWW-Authenticate", "Bearer");
+      return c.json({ error: "unauthorized" }, 401);
+    }
+
     const body = await c.req.json().catch(() => null);
     const parsed = zSyncRequest.safeParse(body);
     if (!parsed.success) {
@@ -35,8 +41,7 @@ export function createApp(db: Db, opts: AppOptions = {}) {
         400,
       );
     }
-    // Single-user until auth lands; the protocol is already user-scoped.
-    const response = processSync(db, LOCAL_USER, parsed.data);
+    const response = processSync(db, OWNER_USER_ID, parsed.data);
     return c.json(response);
   });
 

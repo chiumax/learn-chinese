@@ -25,11 +25,15 @@ for why FSRS.
 
 ```bash
 pnpm install
+cp apps/web/.env.example apps/web/.env.local
+cp apps/server/.env.example apps/server/.env
+# Fill the OAuth and secret values; use the same INTERNAL_SYNC_SECRET.
 pnpm dev            # runs web (:3000) and server (:4000) together
 ```
 
 - Web alone: `pnpm dev:web` · Server alone: `pnpm dev:server`
-- The app seeds a demo deck on first run and works fully offline; reviews land
+- After the owner signs in once, the app seeds a demo deck and works offline;
+  reviews land
   in IndexedDB and queue in an outbox. When the server is reachable, the client
   pushes the outbox and pulls changes (`POST /sync`).
 
@@ -50,11 +54,22 @@ pnpm dev            # runs web (:3000) and server (:4000) together
 - **Server:** SQLite (better-sqlite3 + Drizzle), a long-lived Node process.
 - **Reviews** are immutable, conflict-free events; **decks/notes/cards** are
   last-write-wins; a card's schedule is **derived** by replaying its review log.
-- Sync is push/pull with a monotonic cursor and per-mutation idempotency.
+- Sync is push/pull with a monotonic cursor and per-mutation idempotency. The
+  browser calls an authenticated same-origin Next.js endpoint, which proxies to
+  the private sync service with a separate service credential.
+
+## Railway
+
+The deployment definition and approval-safe runbook live in
+[`/.railway`](./.railway/README.md). It provisions a public Next.js service and
+a private, single-replica sync service with persistent SQLite storage. Applying
+the plan, creating credentials, and exposing the web domain are intentionally
+manual approval steps.
 
 ## Status
 
-Working end-to-end: offline study loop + multi-device sync against the local
-SQLite server. Not yet built: real auth (server is single-user for now),
-parameter optimization, deck/note authoring UI, audio, handwriting. See
-`ARCHITECTURE.md` §11.
+Working end-to-end: allowlisted Google authentication for the owner's two
+logins, offline study loop, and multi-device sync through one private SQLite
+dataset. Not yet built: parameter
+optimization, deck/note authoring UI, audio, handwriting. See `ARCHITECTURE.md`
+§11.

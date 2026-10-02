@@ -1,5 +1,7 @@
 import Database from "better-sqlite3";
 import { drizzle } from "drizzle-orm/better-sqlite3";
+import { mkdirSync } from "node:fs";
+import { dirname } from "node:path";
 import * as schema from "./schema";
 
 export type Db = ReturnType<typeof drizzle<typeof schema>>;
@@ -49,6 +51,7 @@ CREATE INDEX IF NOT EXISTS idx_reviews_card ON reviews (card_id, reviewed_at);
 
 /** Open a database (file path or ":memory:") and ensure the schema exists. */
 export function createDb(path: string): { db: Db; sqlite: Database.Database } {
+  if (path !== ":memory:") mkdirSync(dirname(path), { recursive: true });
   const sqlite = new Database(path);
   sqlite.pragma("journal_mode = WAL");
   sqlite.pragma("foreign_keys = ON");

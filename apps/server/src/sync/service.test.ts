@@ -10,7 +10,7 @@ import {
 } from "@learn-chinese/shared";
 import { beforeEach, describe, expect, it } from "vitest";
 import { createDb, type Db } from "../db/client";
-import { LOCAL_USER, processSync } from "./service";
+import { OWNER_USER_ID, processSync } from "./service";
 
 let db: Db;
 beforeEach(() => {
@@ -89,7 +89,7 @@ describe("processSync", () => {
     const { deck, note, card } = fixtures();
     const res = processSync(
       db,
-      LOCAL_USER,
+      OWNER_USER_ID,
       req([
         mut("deck", deck, "m1"),
         mut("note", note, "m2"),
@@ -103,29 +103,41 @@ describe("processSync", () => {
 
   it("is idempotent: re-sending the same mutations adds no new changes", () => {
     const { deck } = fixtures();
-    const first = processSync(db, LOCAL_USER, req([mut("deck", deck, "m1")]));
+    const first = processSync(
+      db,
+      OWNER_USER_ID,
+      req([mut("deck", deck, "m1")]),
+    );
     // Re-send from the cursor we just reached — nothing new should come back.
     const again = processSync(
       db,
-      LOCAL_USER,
+      OWNER_USER_ID,
       req([mut("deck", deck, "m1")], first.cursor),
     );
     expect(again.applied).toEqual(["m1"]); // still acked
     expect(again.changes).toHaveLength(0); // but no new change row created
   });
 
-  it("lets a second device pull everything from cursor 0", () => {
+  it("shares one owner dataset across the two allowed-login devices", () => {
     const { deck, note, card } = fixtures();
     processSync(
       db,
-      LOCAL_USER,
-      req([
-        mut("deck", deck, "m1"),
-        mut("note", note, "m2"),
-        mut("card", card, "m3"),
-      ]),
+      OWNER_USER_ID,
+      req(
+        [
+          mut("deck", deck, "m1"),
+          mut("note", note, "m2"),
+          mut("card", card, "m3"),
+        ],
+        0,
+        "owner-device-a",
+      ),
     );
-    const deviceB = processSync(db, LOCAL_USER, req([], 0, "B"));
+    const deviceB = processSync(
+      db,
+      OWNER_USER_ID,
+      req([], 0, "owner-device-b"),
+    );
     expect(deviceB.changes.map((c) => c.entity)).toEqual([
       "deck",
       "note",
@@ -139,7 +151,7 @@ describe("processSync", () => {
     const r = review(sched, 3, T0, "A", "rev1");
     const res = processSync(
       db,
-      LOCAL_USER,
+      OWNER_USER_ID,
       req([
         mut("deck", deck, "m1"),
         mut("note", note, "m2"),
@@ -161,7 +173,7 @@ describe("processSync", () => {
     const { deck, note, card, sched } = fixtures();
     processSync(
       db,
-      LOCAL_USER,
+      OWNER_USER_ID,
       req([
         mut("deck", deck, "m1"),
         mut("note", note, "m2"),
@@ -172,12 +184,12 @@ describe("processSync", () => {
     // Device A reviews at T0; device B reviews the same card a day later.
     const rA = review(sched, 3, T0, "A", "revA");
     const rB = review(sched, 4, "2026-01-02T00:00:00.000Z", "B", "revB");
-    processSync(db, LOCAL_USER, req([mut("review", rA, "mA")], 3, "A"));
-    processSync(db, LOCAL_USER, req([mut("review", rB, "mB")], 3, "B"));
+    processSync(db, OWNER_USER_ID, req([mut("review", rA, "mA")], 3, "A"));
+    processSync(db, OWNER_USER_ID, req([mut("review", rB, "mB")], 3, "B"));
 
     const reviewsStored = processSync(
       db,
-      LOCAL_USER,
+      OWNER_USER_ID,
       req([], 0, "C"),
     ).changes.filter((c) => c.entity === "review");
     expect(reviewsStored).toHaveLength(2); // both kept, no conflict
@@ -189,7 +201,7 @@ describe("processSync", () => {
       4,
       new Date("2026-01-02T00:00:00.000Z"),
     ).schedule;
-    const cardNow = processSync(db, LOCAL_USER, req([], 0, "C"))
+    const cardNow = processSync(db, OWNER_USER_ID, req([], 0, "C"))
       .changes.filter((c) => c.entity === "card")
       .pop()!.payload as Card;
     expect(cardNow.schedule.due).toBe(afterB.due);

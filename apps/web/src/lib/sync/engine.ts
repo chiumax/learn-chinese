@@ -8,7 +8,6 @@ import type {
   SyncResponse,
 } from "@learn-chinese/shared";
 import { db, getDeviceId } from "@/lib/db/dexie";
-import { env } from "@/lib/env";
 
 /**
  * Client sync engine (ARCHITECTURE.md §5.4). Drains the local outbox to the
@@ -78,7 +77,7 @@ export async function syncOnce(): Promise<SyncResult> {
     payload: o.payload,
   }));
 
-  const res = await fetch(`${env.NEXT_PUBLIC_SYNC_URL}/sync`, {
+  const res = await fetch("/api/sync", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({

@@ -56,7 +56,7 @@ feature lands, to avoid dead dependencies).
 | Server ORM           | **Drizzle ORM**                                  | ✅     | Sync store in `apps/server`                               |
 | Server DB            | **SQLite** (better-sqlite3)                      | ✅     | Local file; swap dialect for Postgres/Turso later         |
 | Sync API             | **`POST /sync`** (Hono)                          | ✅     | Push/pull with cursor + idempotency                       |
-| Auth                 | **Auth.js (NextAuth v5)**                        | 🔜     | Server is single-user (LOCAL_USER) until then             |
+| Auth                 | **Auth.js (NextAuth v5)**                        | ✅     | Two verified emails mapped to one owner                   |
 | Forms                | **react-hook-form** + Zod resolver               | 🔜     | Deck/note authoring UI                                    |
 | Charts               | **recharts**                                     | 🔜     | Review heatmap, retention forecast                        |
 | E2E tests            | **Playwright**                                   | 🔜     | Offline review-flow scenario                              |
@@ -94,10 +94,15 @@ feature lands, to avoid dead dependencies).
                                               │  (online only)
                                               ▼
                           ┌─────────────────────────────────┐
-                          │  apps/server (standalone Hono)  │
-                          │  POST /sync                      │
-                          │  Drizzle ──► SQLite              │
-                          │  replays FSRS (from shared)      │
+                          │ Authenticated Next /api/sync     │
+                          │ proxy + owner session check      │
+                          └─────────────────┬────────────────┘
+                                          │ private network + bearer
+                                          ▼
+                          ┌─────────────────────────────────┐
+                          │ apps/server (private Hono)       │
+                          │ POST /sync ─► SQLite volume   │
+                          │ replays FSRS (from shared)       │
                           └─────────────────────────────────┘
 ```
 

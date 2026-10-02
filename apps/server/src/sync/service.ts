@@ -23,7 +23,8 @@ import {
   reviews,
 } from "../db/schema";
 
-export const LOCAL_USER = "local-user";
+/** Stable database owner for this intentionally single-user deployment. */
+export const OWNER_USER_ID = "owner";
 
 /** Validate a mutation's payload against its entity schema; throws on mismatch. */
 function parsePayload(m: SyncMutation) {
