@@ -46,7 +46,7 @@ No Google API scopes beyond Auth.js's sign-in defaults are needed.
 2. Install/log in to Railway CLI and link the intended project/environment.
 3. Add the four shared variables above without committing their values.
 4. Run `railway config plan` and review the proposed two services plus one
-   512 MB volume.
+   500 MB volume (the Trial plan maximum).
 5. Only after explicit approval, run `railway config apply`.
 6. Generate a Railway public domain for **web only**. Do not generate a domain
    or TCP proxy for `sync`.

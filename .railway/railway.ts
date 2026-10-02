@@ -1,7 +1,7 @@
 import { defineRailway, github, project, service, volume } from "railway/iac";
 
 export default defineRailway((ctx) => {
-  const syncData = volume("sync-data", { sizeMB: 512 });
+  const syncData = volume("sync-data", { sizeMB: 500 });
 
   const sync = service("sync", {
     source: github("chiumax/learn-chinese", {
